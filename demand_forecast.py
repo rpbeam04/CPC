@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
+import os
 
 def smoothing(data: pd.DataFrame):    
     assert list(data.columns) == ['Date', 'Total_Orders', 'Order_Quantity'], "Dataframe must contain only 'Date', 'Total_Orders', and 'Order_Quantity' columns."
@@ -38,6 +39,10 @@ def smoothing(data: pd.DataFrame):
     forecast_log_quantity = model_quantity.forecast(12)
     forecast_quantity = np.exp(forecast_log_quantity)
     avg_quantity = forecast_quantity.mean()
+
+    # Temorary Images directory
+    if not os.path.exists('Images'):
+        os.makedirs('Images')
 
     # Creating forecasted plots
     plt.figure(figsize=(12, 5))
