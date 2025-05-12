@@ -13,6 +13,7 @@ def smoothing(data: pd.DataFrame):
         return "ERROR: Unable to convert 'Date' column to datetime. Ensure the date format is correct in the date column.", 0, 0, 0
 
     data = data.set_index('Date').asfreq('MS')
+
     # Log-transforming the data
     data['Log_Total_Orders'] = np.log(data['Total_Orders'])
     data['Log_Order_Quantity'] = np.log(data['Order_Quantity'])
@@ -71,15 +72,20 @@ def smoothing(data: pd.DataFrame):
     plt.tight_layout()
     plt.savefig('Images/order_quantity_forecast_ENI.png')
 
+    order_data = pd.DataFrame({
+                    'Forecasted Orders': forecast_orders,
+                    'Avg Forecast Orders': avg_orders
+                })
+    qty_data = pd.DataFrame({
+                    'Forecasted Quantity': forecast_quantity,
+                    'Avg Forecast Quantity': avg_quantity
+                })
+    order_data.index = order_data.index.strftime('%Y-%m')
+    qty_data.index = qty_data.index.strftime('%Y-%m')
+
     return (
         'Images/total_orders_forecast_ENI.png',
         'Images/order_quantity_forecast_ENI.png',
-        pd.DataFrame({
-            'Forecasted Orders': forecast_orders,
-            'Avg Forecast Orders': avg_orders
-        }),
-        pd.DataFrame({
-            'Forecasted Quantity': forecast_quantity,
-            'Avg Forecast Quantity': avg_quantity
-        })
+        order_data,
+        qty_data
     )
