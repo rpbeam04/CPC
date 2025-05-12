@@ -5,11 +5,12 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 import os
 
 def smoothing(data: pd.DataFrame):    
-    assert list(data.columns) == ['Date', 'Total_Orders', 'Order_Quantity'], "Dataframe must contain only 'Date', 'Total_Orders', and 'Order_Quantity' columns."
+    if list(data.columns) != ['Date', 'Total_Orders', 'Order_Quantity']: 
+        return "ERROR: Dataframe must contain only 'Date', 'Total_Orders', and 'Order_Quantity' columns.", 0, 0, 0
     try:
         data['Date'] = pd.to_datetime(data['Date'])
     except ValueError as e:
-        return "Error converting 'Date' column to datetime. Ensure the date format is correct in the date column.", 0, 0, 0
+        return "ERROR: Unable to convert 'Date' column to datetime. Ensure the date format is correct in the date column.", 0, 0, 0
 
     data = data.set_index('Date').asfreq('MS')
     # Log-transforming the data
