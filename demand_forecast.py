@@ -9,7 +9,7 @@ def smoothing(data: pd.DataFrame):
     try:
         data['Date'] = pd.to_datetime(data['Date'])
     except ValueError as e:
-        raise ValueError(f"Date column format unable to be parsed correctly- check the values in the date column:\n{e}")
+        return "Error converting 'Date' column to datetime. Ensure the date format is correct in the date column.", 0, 0, 0
 
     data = data.set_index('Date').asfreq('MS')
     # Log-transforming the data

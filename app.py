@@ -44,6 +44,9 @@ if page == "Forecasting":
             "exponential smoothing model with log-transformation.")
             
         order_plot, qty_plot, order_table, qty_table = smoothing(demand_data)
+        if type(order_plot) == str and qty_plot == 0:
+            st.write(order_plot)
+            
         o_col, q_col = st.columns(2)
         with o_col:
             st.image(order_plot)
