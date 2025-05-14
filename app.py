@@ -15,7 +15,8 @@ page = st.sidebar.selectbox("Select Page", ["Forecasting", "Productivity Report"
 
 if page == "Forecasting":
     # Section 1: Demand Forecasting
-    st.header("Part 1: Demand Forecasting")
+    st.header("Step 1: Demand Forecasting")
+    st.write("Given a dataset of past orders and qunatity, forecast future demand using a mathematical model.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -60,11 +61,56 @@ if page == "Forecasting":
         if os.path.exists(qty_plot):
             os.remove(qty_plot)
 
-    # Add a header
-    st.header("Labor Forecast")
+    # Transaction Forecasting
+    st.header("Step 2: Forecast Transaction Counts")
+    st.write("Use the forecasts from the previous step or input your own numbers to calculate the neccesary transactions to handle demand.")
 
-    # Add some text
-    st.write("Run the labor forecasting model with the parameters set above.")
+    col1, col2 = st.columns(2)
+    with col1:
+        orders = st.text_input("Enter the number of orders forecasted:")
+    with col2:
+        quantity = st.text_input("Enter the total quantity forecasted:")
+
+    if orders and quantity:
+        try:
+            orders = float(orders)
+            quantity = float(quantity)
+            with col1:
+                st.write(f"Forecasted Orders: {orders}")
+            with col2:
+                st.write(f"Forecasted Quantity: {quantity}")
+
+            st.dataframe({
+                "Forecasted Orders": [str(orders), "This code is currently under construction."],
+                "Forecasted Quantity": [str(quantity), ""]
+            }, use_container_width=True)
+
+        except ValueError:
+            st.write("Please enter valid numeric values for orders and quantity.")
+
+    # Labor Optimization Model
+    st.header("Step 3: Labor Optimization Model")
+    st.write("Use the data from the transaction forecast with this model to determine the number of employees needed by brand/position.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        transactions = st.file_uploader("Upload Trnasaction Forecast", type=["csv", "xlsx"])
+    with col2:
+        employees = st.file_uploader("Upload Employee Transaction Averages", type=["csv", "xlsx"])
+
+    if transactions is not None and employees is not None:
+        if transactions.name.endswith('.csv'):
+            transactions = pd.read_csv(transactions)
+        else:
+            transactions = pd.read_excel(transactions)
+
+        if employees.name.endswith('.csv'):
+            employees = pd.read_csv(employees)
+        else:
+            employees = pd.read_excel(employees)
+
+        st.write("Transaction and employee data uploaded successfully.")
+        st.write("This code is currently under construction.")
 
 if page == "Productivity Report":
     # Section 2: Productivity Report
