@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from demand_forecast import smoothing
+from orders_to_trans import forecast_pipeline
 import os
 
 # Labor Forecasting App
@@ -64,29 +65,47 @@ if page == "Forecasting":
     # Transaction Forecasting
     st.header("Step 2: Forecast Transaction Counts")
     st.write("Use the forecasts from the previous step or input your own numbers to calculate the neccesary transactions to handle demand.")
-
+    
     col1, col2 = st.columns(2)
     with col1:
-        orders = st.text_input("Enter the number of orders forecasted:")
+        sum400 = st.file_uploader("Upload 400 Summary", type=["csv", "xlsx"])
+        sum451 = st.file_uploader("Upload 451 Summary", type=["csv", "xlsx"])
     with col2:
-        quantity = st.text_input("Enter the total quantity forecasted:")
+        sum900 = st.file_uploader("Upload 900 Summary", type=["csv", "xlsx"])
+        quantity_451 = st.text_input("Enter the total quantity forecasted for 451:")
+        quantity_900 = st.text_input("Enter the total quantity forecasted for 900:")
 
-    if orders and quantity:
+    if sum400 is not None and sum451 is not None and sum900 is not None and quantity_451 and quantity_900:
         try:
-            orders = float(orders)
-            quantity = float(quantity)
-            with col1:
-                st.write(f"Forecasted Orders: {orders}")
-            with col2:
-                st.write(f"Forecasted Quantity: {quantity}")
+            quantity_451 = float(quantity_451)
+            quantity_900 = float(quantity_900)
 
+            out400, out451, out900, outNB = forecast_pipeline([quantity_451]*12, [quantity_900]*12)
+            print(out400.head())
+            st.write("Transactions for 400:")
             st.dataframe({
-                "Forecasted Orders": [str(orders), "This code is currently under construction."],
-                "Forecasted Quantity": [str(quantity), ""]
+                out400
             }, use_container_width=True)
 
-        except ValueError:
-            st.write("Please enter valid numeric values for orders and quantity.")
+            st.write("Transactions for 451:")
+            st.dataframe({
+                out451
+            }, use_container_width=True)
+
+            st.write("Transactions for 900:")
+            st.dataframe({
+                out900
+            }, use_container_width=True)
+
+            st.write("Transactions for No Brand:")
+            st.dataframe({
+                outNB
+            }, use_container_width=True)
+
+        # except ValueError:
+        #     st.write("Please enter valid numeric values for orders and quantity.")
+        except Exception as e:
+            st.write(f"An error occurred: {e}")
 
     # Labor Optimization Model
     st.header("Step 3: Labor Optimization Model")

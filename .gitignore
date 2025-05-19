@@ -5,3 +5,4 @@ zTemp
 .venv
 __pycache__
 *.pdf
+*.csv
