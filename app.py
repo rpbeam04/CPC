@@ -81,26 +81,18 @@ if page == "Forecasting":
             quantity_900 = float(quantity_900)
 
             out400, out451, out900, outNB = forecast_pipeline([quantity_451]*12, [quantity_900]*12)
-            print(out400.head())
+            
             st.write("Transactions for 400:")
-            st.dataframe({
-                out400
-            }, use_container_width=True)
+            st.dataframe(out400)
 
             st.write("Transactions for 451:")
-            st.dataframe({
-                out451
-            }, use_container_width=True)
+            st.dataframe(out451)
 
             st.write("Transactions for 900:")
-            st.dataframe({
-                out900
-            }, use_container_width=True)
+            st.dataframe(out900)
 
             st.write("Transactions for No Brand:")
-            st.dataframe({
-                outNB
-            }, use_container_width=True)
+            st.dataframe(outNB)
 
         # except ValueError:
         #     st.write("Please enter valid numeric values for orders and quantity.")
