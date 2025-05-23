@@ -84,3 +84,18 @@ def optimization_model(brands, forecasts, capabilities, row_index=0):
             return staffing, total, True
         else:
             return staffing, total, False
+        
+test = False
+
+if test:
+    brands = [900]
+    df_f = pd.read_csv("projected_summary_900.csv")
+    df_c = pd.read_csv("position_monthly_avg_transactions_filtered_900.csv")
+
+    staffing, total, success = optimization_model(brands, [df_f], [df_c])
+
+    if success:
+        print(f"Staffing for brand {brands[0]}: {staffing}")
+        print(f"Total employees needed: {total}")
+    else:
+        print("An error occurred while optimizing staffing.")

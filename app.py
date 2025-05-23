@@ -127,7 +127,7 @@ if page == "Forecasting":
         brands = ["test"]
         row_index = st.slider("Select Month", 1, len(transactions), 1) - 1
 
-        if row_index:
+        if row_index > -1:
             staffing, total, success = optimization_model(brands, [transactions], [employees], row_index)
 
             if success:
