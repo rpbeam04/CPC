@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from demand_forecast import smoothing
 from orders_to_trans import forecast_pipeline
-from optimization import labor_optimization
+from optimization import optimization_model
 import os
 
 # Labor Forecasting App
@@ -84,7 +84,7 @@ if page == "Forecasting":
             quantity_451 = float(quantity_451)
             quantity_900 = float(quantity_900)
 
-            out400, out451, out900, outNB = forecast_pipeline([quantity_451]*12, [quantity_900]*12)
+            out400, out451, out900, outNB = forecast_pipeline([sum400, sum451, sum900], [quantity_451]*12, [quantity_900]*12)
             
             st.write("Transactions for 400:")
             st.dataframe(out400)
@@ -111,7 +111,7 @@ if page == "Forecasting":
     with col1:
         transactions = st.file_uploader("Upload Trnasaction Forecast", type=["csv", "xlsx"])
     with col2:
-        employees = st.file_uploader("Upload Employee Transaction Averages", type=["csv", "xlsx"])
+        employees = st.file_uploader("Upload Employee Capabilities", type=["csv", "xlsx"])
 
     if transactions is not None and employees is not None:
         if transactions.name.endswith('.csv'):
@@ -124,10 +124,22 @@ if page == "Forecasting":
         else:
             employees = pd.read_excel(employees)
 
-        st.write("Transaction and employee data uploaded successfully.")
-        st.write("This code is currently under construction.")
+        brands = ["test"]
+        row_index = st.slider("Select Month", 1, len(transactions), 1) - 1
+
+        if row_index:
+            staffing, total, success = optimization_model(brands, [transactions], [employees], row_index)
+
+            if success:
+                for brand_name in brands:
+                    st.write(f"\n{brand_name} Staffing Plan (Month {row_index}):")
+                    for role, count in staffing.items():
+                        st.write(f"  {role}: {count}")
+                    st.write(f"Total Employees Needed: {total}")
+            else:
+                st.write("An error occurred while optimizing staffing.")
 
 if page == "Productivity Report":
     # Section 2: Productivity Report
-    st.header("Part 2: Productivity Report")
+    st.header("Productivity Report")
     st.write("This section will provide a productivity report based on the employee data.")

@@ -110,13 +110,11 @@ def forecast_no_brand_transactions(f451, f900, f400):
     df_f.to_csv('forecast_no_brand_transactions_by_type.csv', index=False)
     return df_f
 
-def forecast_pipeline(forecast_451, forecast_900):
+def forecast_pipeline(summary_files, forecast_451, forecast_900):
     # === 1. Historical Summaries ===
-    summary_files = ['451_summary.csv', '900_summary.csv', '400_summary.csv', 'no_brand_summary.csv']
     anchor_type = '341'
 
-    for file in summary_files:
-        df = pd.read_csv(file, low_memory=False)
+    for df in summary_files:
         df['date'] = pd.to_datetime(df['date'])
         df['Month'] = df['date'].dt.to_period('M')
 
@@ -159,6 +157,10 @@ def forecast_pipeline(forecast_451, forecast_900):
     # Forecast no-brand transactions using type shares
     df_no_brand = forecast_no_brand_transactions(forecast_451, forecast_900, forecast_400)
 
-    # Save all results
+    # delete all csv files in current directory
+    files = os.listdir('.')
+    for file in files:
+        if os.path.exists(file) and (file.endswith('.csv') or file.endswith('.xlsx')):
+            os.remove(file)
 
     return df_400, df_451, df_900, df_no_brand
