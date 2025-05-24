@@ -44,6 +44,8 @@ if page == "Forecasting":
         else:
             st.write("Please upload a valid CSV or Excel file.")
 
+        quantity = pd.DataFrame()
+
         order_plots, qty_plots, order_tables, qty_tables, brands = smoothing(demand_data)
         if type(order_plots) == str and qty_plots == 0:
             st.write(order_plots)
@@ -59,12 +61,21 @@ if page == "Forecasting":
                         st.image(qty_plots[i])
                         st.dataframe(qty_tables[i], use_container_width=True)
 
+                    qty_tables: list[pd.DataFrame]
+                    qty_tables[i].rename(columns = {'Forecasted Quantity': f'{brand}'}, inplace=True)
+                    quantity = pd.concat([quantity, qty_tables[i][f'{brand}']], axis=1)
+
                     if os.path.exists(order_plots[i]):
                         os.remove(order_plots[i])
                     if os.path.exists(qty_plots[i]):
                         os.remove(qty_plots[i])
                 else:
                     st.write(f"Brand {brand} needs at least 12 months of data to forecast.")
+
+        st.write("Downloadable data for part 2:")
+        quantity = quantity.reset_index(drop=False, names=['Date'])
+        quantity = quantity.fillna(0)
+        st.dataframe(quantity, use_container_width=True, hide_index=True)            
 
     # Transaction Forecasting
     st.header("Step 2: Forecast Transaction Counts")
