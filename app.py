@@ -72,47 +72,79 @@ if page == "Forecasting":
                 else:
                     st.write(f"Brand {brand} needs at least 12 months of data to forecast.")
 
-        st.write("Downloadable data for part 2:")
+        st.subheader("Downloadable data for part 2:")
         quantity = quantity.reset_index(drop=False, names=['Date'])
         quantity = quantity.fillna(0)
         st.dataframe(quantity, use_container_width=True, hide_index=True)            
 
-    # Transaction Forecasting
+    # Section 2: Transaction Forecasting
     st.header("Step 2: Forecast Transaction Counts")
     st.write("Use the forecasts from the previous step or input your own numbers to calculate the neccesary transactions to handle demand.")
     
     col1, col2 = st.columns(2)
     with col1:
-        sum400 = st.file_uploader("Upload 400 Summary", type=["csv", "xlsx"])
-        sum451 = st.file_uploader("Upload 451 Summary", type=["csv", "xlsx"])
+        summary = st.file_uploader("Upload Transaction Summary", type=["csv", "xlsx"])
     with col2:
-        sum900 = st.file_uploader("Upload 900 Summary", type=["csv", "xlsx"])
-        quantity_451 = st.text_input("Enter the total quantity forecasted for 451:")
-        quantity_900 = st.text_input("Enter the total quantity forecasted for 900:")
-
-    if sum400 is not None and sum451 is not None and sum900 is not None and quantity_451 and quantity_900:
+        quantity = st.file_uploader("Upload Quantity Forecast", type=["csv", "xlsx"])
+    if summary is not None and quantity is not None:
         try:
-            quantity_451 = float(quantity_451)
-            quantity_900 = float(quantity_900)
+            if summary.name.endswith(".csv"):
+                summary = pd.read_csv(summary)
+            else:
+                summary = pd.read_excel(summary)
 
-            out400, out451, out900, outNB = forecast_pipeline([sum400, sum451, sum900], [quantity_451]*12, [quantity_900]*12)
+            if quantity.name.endswith(".csv"):
+                quantity = pd.read_csv(quantity)
+            else:
+                quantity = pd.read_excel(quantity)
+
+            if "transactions" not in summary.columns or "quantity" not in summary.columns:
+                st.write("ERROR: Transaction summary must have 'transactions' and 'quantity' columns.")
+            elif not all(b in summary['brand'].astype(str).values for b in ["400", "451", "900", "no_brand"]):                
+                st.write("ERROR: Transaction summary must have 'brand' column with brands 400, 451, 900, and no_brand.")
             
-            st.write("Transactions for 400:")
-            st.dataframe(out400)
+            elif "451" not in quantity.columns or "900" not in quantity.columns:
+                st.write("ERROR: Brands '451' and '900' must be columns in the quantity forecast data.")
+            elif "Date" not in quantity.columns:
+                st.write("ERROR: Quantity forecast must have a 'Date' column.")
+                        
+            elif len(quantity["451"]) != 12 or len(quantity["900"]) != 12:
+                st.write("ERROR: Quantity forecast must have 12 months of data for both brands '451' and '900'.")
+            else:
+                quantity = quantity.set_index("Date")
 
-            st.write("Transactions for 451:")
-            st.dataframe(out451)
+                forecast_451 = quantity["451"]
+                forecast_900 = quantity["900"]
+                
+                out400, out451, out900, outNB = forecast_pipeline(summary, forecast_451, forecast_900)
+                
+                # add together the dataframes
+                total = pd.concat([out400, out451, out900, outNB], axis=0)
+                total = total.groupby('Month').sum().reset_index()
+                total['Month'] = pd.to_datetime(total['Month']).dt.strftime('%Y-%m')
+                total = total.rename(columns={'Month': 'Date'})
+                total = total.fillna(0)
 
-            st.write("Transactions for 900:")
-            st.dataframe(out900)
+                st.write("Transactions for 400:")
+                st.dataframe(out400, use_container_width=True, hide_index=True)
 
-            st.write("Transactions for No Brand:")
-            st.dataframe(outNB)
+                st.write("Transactions for 451:")
+                st.dataframe(out451, use_container_width=True, hide_index=True)
+
+                st.write("Transactions for 900:")
+                st.dataframe(out900, use_container_width=True, hide_index=True)
+
+                st.write("Transactions for No Brand:")
+                st.dataframe(outNB, use_container_width=True, hide_index=True)
+
+                st.write("Total Transactions:")
+                st.dataframe(total, use_container_width=True, hide_index=True)
 
         # except ValueError:
         #     st.write("Please enter valid numeric values for orders and quantity.")
         except Exception as e:
-            st.write(f"An error occurred: {e}")
+            st.write(f"An error occurred. Make sure files are the correct type and format. Error: {e}")
+            raise e
 
     # Labor Optimization Model
     st.header("Step 3: Labor Optimization Model")
