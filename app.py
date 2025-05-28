@@ -5,20 +5,27 @@ from orders_to_trans import forecast_pipeline
 from optimization import optimization_model
 import os
 
+st.set_page_config(
+    page_title="JR286 Labor Forecasting",
+    page_icon="jr286.png",
+    layout="wide"
+)
+
 # Labor Forecasting App
 st.title("JR286 Labor Forecasting")
 
-# Sidebar
-st.sidebar.header("Select an Interface")
-st.sidebar.write("Use the dropdown to change interfaces.")
+# # Sidebar
+# st.sidebar.header("Select an Interface")
+# st.sidebar.write("Use the dropdown to change interfaces.")
 
-# Use the sidebar to switch between pages
-page = st.sidebar.selectbox("Select Page", ["Forecasting", "Productivity Report"])
+# # Use the sidebar to switch between pages
+# page = st.sidebar.selectbox("Select Page", ["Forecasting", "Productivity Report"])
+page = "Forecasting"
 
 if page == "Forecasting":
     # Section 1: Demand Forecasting
     st.header("Step 1: Demand Forecasting")
-    st.write("Given a dataset of past orders and qunatity, forecast future demand using a mathematical model.")
+    st.write("Given a dataset of past orders and quantity, forecast future order and quantity demand using a Holt-Winters exponential smoothing model.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -47,6 +54,7 @@ if page == "Forecasting":
         quantity = pd.DataFrame()
 
         order_plots, qty_plots, order_tables, qty_tables, brands = smoothing(demand_data)
+        
         if type(order_plots) == str and qty_plots == 0:
             st.write(order_plots)
         else:
@@ -72,14 +80,14 @@ if page == "Forecasting":
                 else:
                     st.write(f"Brand {brand} needs at least 12 months of data to forecast.")
 
-        st.subheader("Downloadable data for part 2:")
+        st.subheader("Downloadable data for Step 2:")
         quantity = quantity.reset_index(drop=False, names=['Date'])
         quantity = quantity.fillna(0)
         st.dataframe(quantity, use_container_width=True, hide_index=True)            
 
     # Section 2: Transaction Forecasting
     st.header("Step 2: Forecast Transaction Counts")
-    st.write("Use the forecasts from the previous step or input your own numbers to calculate the neccesary transactions to handle demand.")
+    st.write("Use a quantity forecast and historical transaction data to calculate the neccesary transactions to handle demand. The output from Step 1 can be used directly with this model.")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -148,7 +156,7 @@ if page == "Forecasting":
 
     # Labor Optimization Model
     st.header("Step 3: Labor Optimization Model")
-    st.write("Use the data from the transaction forecast with this model to determine the number of employees needed by brand/position.")
+    st.write("Use the data from the transaction forecast and historical employee productivity data with this model to determine the number of employees needed by position in a month for each brand.")
 
     # Use session state to persist data across reruns
     if "transactions" not in st.session_state:
@@ -195,9 +203,18 @@ if page == "Forecasting":
         st.session_state.opt_results = None
 
     if st.session_state.transactions:
-        run_opt = st.button("Run Optimization")
+        colA, colB = st.columns(2)
+        with colA:
+            run_opt = st.button("Run Optimization")
 
-        row_index = st.slider("Select Month", 1, len(st.session_state.transactions[0]), 1, key="opt_slider") - 1
+        with colB:
+            # Create a dropdown for selecting the month
+            month_options = list(st.session_state.transactions[0]['Date']) if 'Date' in st.session_state.transactions[0].columns else list(range(1, len(st.session_state.transactions[0]) + 1))
+            selected_month = st.selectbox("Select Month", month_options, key="opt_dropdown")
+            if 'Date' in st.session_state.transactions[0].columns:
+                row_index = month_options.index(selected_month)
+            else:
+                row_index = selected_month - 1
 
         # Only run optimization if button is clicked or slider is changed
         if run_opt or row_index != st.session_state.opt_row_index:
@@ -215,7 +232,7 @@ if page == "Forecasting":
             staffings, totals, success = st.session_state.opt_results
             if success:
                 for i, brand_name in enumerate(st.session_state.brands):
-                    st.subheader(f"\n{brand_name} Staffing Plan (Month {st.session_state.opt_row_index}):")
+                    st.subheader(f"\n{brand_name} Staffing Plan (Month {st.session_state.opt_row_index + 1}):")
                     col1, col2 = st.columns(2)
                     j = 0
                     for role, count in staffings[i].items():
@@ -230,7 +247,7 @@ if page == "Forecasting":
                     st.write(f"Total Employees Needed: {totals[i]}")
             else:
                 st.write("An error occurred while optimizing staffing.")
-                
+
             st.subheader(f"Total Employees across All Brands: {sum(totals)}")
 
 if page == "Productivity Report":

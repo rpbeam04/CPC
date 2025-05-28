@@ -1,0 +1,9 @@
+[theme]
+base="light"
+primaryColor= "#006ac6"
+backgroundColor= "#FFFFFF"
+secondaryBackgroundColor= "#e4e4e4"
+textColor= "#000000"
+linkColor="#006ac6"
+borderColor="#dfdfdf"
+font="sans serif"
