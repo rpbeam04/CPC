@@ -75,27 +75,20 @@ def optimize_staffing_from_dataframe(df_capabilities, df_forecast, row_index=0):
 
 def optimization_model(brands, forecasts, capabilities, row_index=0):
     # processing each brand
+    staffings = []
+    success = True
+    totals = []
+    
     for brand_name, df_forecast, df_cap in zip(brands, forecasts, capabilities):
         df_clean = clean_forecast_columns(df_forecast)
 
         staffing, total, success = optimize_staffing_from_dataframe(df_cap, df_clean, row_index=row_index)
-
-        if success:
-            return staffing, total, True
-        else:
-            return staffing, total, False
         
-test = False
-
-if test:
-    brands = [900]
-    df_f = pd.read_csv("projected_summary_900.csv")
-    df_c = pd.read_csv("position_monthly_avg_transactions_filtered_900.csv")
-
-    staffing, total, success = optimization_model(brands, [df_f], [df_c])
-
-    if success:
-        print(f"Staffing for brand {brands[0]}: {staffing}")
-        print(f"Total employees needed: {total}")
-    else:
-        print("An error occurred while optimizing staffing.")
+        if not success:
+            return [], [], False
+        else:
+            staffings.append(staffing)
+            totals.append(total)
+    
+    return staffings, totals, True
+    

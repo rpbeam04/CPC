@@ -150,37 +150,88 @@ if page == "Forecasting":
     st.header("Step 3: Labor Optimization Model")
     st.write("Use the data from the transaction forecast with this model to determine the number of employees needed by brand/position.")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        transactions = st.file_uploader("Upload Trnasaction Forecast", type=["csv", "xlsx"])
-    with col2:
-        employees = st.file_uploader("Upload Employee Capabilities", type=["csv", "xlsx"])
+    # Use session state to persist data across reruns
+    if "transactions" not in st.session_state:
+        st.session_state.transactions = []
+    if "employees" not in st.session_state:
+        st.session_state.employees = []
+    if "brands" not in st.session_state:
+        st.session_state.brands = []
 
-    if transactions is not None and employees is not None:
-        if transactions.name.endswith('.csv'):
-            transactions = pd.read_csv(transactions)
-        else:
-            transactions = pd.read_excel(transactions)
+    with st.form("add_brand_form", clear_on_submit=True):
+        brand = st.text_input("Brand Name")
+        col1, col2 = st.columns(2)
+        with col1:
+            transaction = st.file_uploader("Upload Transaction Forecast", type=["csv", "xlsx"], key="transaction_file")
+        with col2:
+            employee = st.file_uploader("Upload Employee Capabilities", type=["csv", "xlsx"], key="employee_file")
+        add_clicked = st.form_submit_button("Add Brand")
+        if add_clicked:
+            if brand and transaction is not None and employee is not None:
+                if transaction.name.endswith('.csv'):
+                    transaction_df = pd.read_csv(transaction)
+                else:
+                    transaction_df = pd.read_excel(transaction)
+                if employee.name.endswith('.csv'):
+                    employee_df = pd.read_csv(employee)
+                else:
+                    employee_df = pd.read_excel(employee)
+                st.session_state.transactions.append(transaction_df)
+                st.session_state.employees.append(employee_df)
+                st.session_state.brands.append(brand)
+                st.success(f"Added brand: {brand}")
+            else:
+                st.warning("Please provide a brand name and upload both files.")
 
-        if employees.name.endswith('.csv'):
-            employees = pd.read_csv(employees)
-        else:
-            employees = pd.read_excel(employees)
+    if st.session_state.brands:
+        st.subheader("Brands Added:")
+        for i, b in enumerate(st.session_state.brands):
+            st.write(f"{i+1}. {b}")
 
-        brands = ["test"]
-        row_index = st.slider("Select Month", 1, len(transactions), 1) - 1
+    # Use session state to persist the selected month and optimization results
+    if "opt_row_index" not in st.session_state:
+        st.session_state.opt_row_index = 0
+    if "opt_results" not in st.session_state:
+        st.session_state.opt_results = None
 
-        if row_index > -1:
-            staffing, total, success = optimization_model(brands, [transactions], [employees], row_index)
+    if st.session_state.transactions:
+        run_opt = st.button("Run Optimization")
 
+        row_index = st.slider("Select Month", 1, len(st.session_state.transactions[0]), 1, key="opt_slider") - 1
+
+        # Only run optimization if button is clicked or slider is changed
+        if run_opt or row_index != st.session_state.opt_row_index:
+            st.session_state.opt_row_index = row_index
+            staffings, totals, success = optimization_model(
+                st.session_state.brands,
+                st.session_state.transactions,
+                st.session_state.employees,
+                row_index
+            )
+            st.session_state.opt_results = (staffings, totals, success)
+
+        # Display results if available
+        if st.session_state.opt_results:
+            staffings, totals, success = st.session_state.opt_results
             if success:
-                for brand_name in brands:
-                    st.write(f"\n{brand_name} Staffing Plan (Month {row_index}):")
-                    for role, count in staffing.items():
-                        st.write(f"  {role}: {count}")
-                    st.write(f"Total Employees Needed: {total}")
+                for i, brand_name in enumerate(st.session_state.brands):
+                    st.subheader(f"\n{brand_name} Staffing Plan (Month {st.session_state.opt_row_index}):")
+                    col1, col2 = st.columns(2)
+                    j = 0
+                    for role, count in staffings[i].items():
+                        if j / len(staffings[i]) < 0.5:
+                            with col1:
+                                st.write(f"  {role}: {count}")
+                                j += 1
+                        else:
+                            with col2:
+                                st.write(f"  {role}: {count}")
+                                j += 1
+                    st.write(f"Total Employees Needed: {totals[i]}")
             else:
                 st.write("An error occurred while optimizing staffing.")
+                
+            st.subheader(f"Total Employees across All Brands: {sum(totals)}")
 
 if page == "Productivity Report":
     # Section 2: Productivity Report
